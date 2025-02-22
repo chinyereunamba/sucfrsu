@@ -1,44 +1,26 @@
+import Link from "next/link";
 import NextLogo from "./next-logo";
 import SupabaseLogo from "./supabase-logo";
+import { Button } from "./ui/button";
 
 export default function Header() {
   return (
-    <div className="flex flex-col gap-16 items-center">
-      <div className="flex gap-8 justify-center items-center">
-        <a
-          href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <SupabaseLogo />
-        </a>
-        <span className="border-l rotate-45 h-6" />
-        <a href="https://nextjs.org/" target="_blank" rel="noreferrer">
-          <NextLogo />
-        </a>
-      </div>
-      <h1 className="sr-only">Supabase and Next.js Starter Template</h1>
-      <p className="text-3xl lg:text-4xl !leading-tight mx-auto max-w-xl text-center">
-        The fastest way to build apps with{" "}
-        <a
-          href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-          target="_blank"
-          className="font-bold hover:underline"
-          rel="noreferrer"
-        >
-          Supabase
-        </a>{" "}
-        and{" "}
-        <a
-          href="https://nextjs.org/"
-          target="_blank"
-          className="font-bold hover:underline"
-          rel="noreferrer"
-        >
-          Next.js
-        </a>
+    <div className="flex flex-col items-center justify-center space-y-8 min-h-[60vh]">
+      <h1 className="text-4xl font-bold text-center">
+        Welcome to Our Christian Fellowship
+      </h1>
+      <p className="text-xl text-center max-w-2xl">
+        Join us in our journey of faith, love, and community. Share and explore
+        resources that strengthen our spiritual growth.
       </p>
-      <div className="w-full p-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent my-8" />
+      <div className="flex space-x-4">
+        <Button asChild>
+          <Link href="/dashboard">Upload Files</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/files">View Files</Link>
+        </Button>
+      </div>
     </div>
   );
 }
