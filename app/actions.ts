@@ -4,6 +4,7 @@ import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
@@ -15,7 +16,7 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect(
       "error",
       "/sign-up",
-      "Email and password are required",
+      "Email and password are required"
     );
   }
 
@@ -34,7 +35,7 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect(
       "success",
       "/sign-up",
-      "Thanks for signing up! Please check your email for a verification link.",
+      "Thanks for signing up! Please check your email for a verification link."
     );
   }
 };
@@ -53,7 +54,7 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  return redirect("/protected");
+  return redirect("/dashboard");
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {
@@ -75,7 +76,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
     return encodedRedirect(
       "error",
       "/forgot-password",
-      "Could not reset password",
+      "Could not reset password"
     );
   }
 
@@ -86,7 +87,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
   return encodedRedirect(
     "success",
     "/forgot-password",
-    "Check your email for a link to reset your password.",
+    "Check your email for a link to reset your password."
   );
 };
 
@@ -100,7 +101,7 @@ export const resetPasswordAction = async (formData: FormData) => {
     encodedRedirect(
       "error",
       "/protected/reset-password",
-      "Password and confirm password are required",
+      "Password and confirm password are required"
     );
   }
 
@@ -108,7 +109,7 @@ export const resetPasswordAction = async (formData: FormData) => {
     encodedRedirect(
       "error",
       "/protected/reset-password",
-      "Passwords do not match",
+      "Passwords do not match"
     );
   }
 
@@ -120,15 +121,101 @@ export const resetPasswordAction = async (formData: FormData) => {
     encodedRedirect(
       "error",
       "/protected/reset-password",
-      "Password update failed",
+      "Password update failed"
     );
   }
 
   encodedRedirect("success", "/protected/reset-password", "Password updated");
 };
 
-export const signOutAction = async () => {
+export async function getDepartments() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
-  return redirect("/sign-in");
-};
+  const { data: departments, error: deptError } = await supabase
+    .from("departments")
+    .select("*");
+  const departmentCounts = await Promise.all(
+    departments!.map(async (department) => {
+      const { count, error: countError } = await supabase
+        .from("storage.objects")
+        .select("*", { count: "exact", head: true })
+        .ilike("name", `${department.name}/%`);
+
+      return {
+        ...department,
+        documentCount: count ?? 0, // If no files, return 0
+      };
+    })
+  );
+  if (deptError) throw deptError;
+  return departmentCounts;
+}
+
+export async function uploadFile(formData: FormData) {
+  const supabase = await createClient();
+  const file = formData.get("file") as File;
+  const department = formData.get("department") as string;
+  let label = formData.get("label") as string | null;
+
+  if (!file) {
+    throw new Error("No file uploaded");
+  }
+
+  if (!department) {
+    throw new Error("No department selected");
+  }
+
+  // // 🔍 Check if department exists in DB
+  // const { data: dept, error: deptError } = await supabase
+  //   .from("departments")
+  //   .select("name")
+  //   .eq("name", department)
+  //   .single();
+
+  // if (deptError || !dept) throw new Error("Department not found");
+
+  if (!label || label.trim() === "") {
+    label = department;
+  }
+
+  const fileExtension = file.name.split(".").pop();
+  const d = new Date();
+  const date = `${d.getUTCDate()}-${d.getUTCMonth() + 1}-${d.getUTCFullYear()}`;
+  const newFileName = `${label.replace(/\s+/g, "-").toLowerCase()}-${date}.${fileExtension}`;
+
+  // 📁 Upload file to the department folder
+  const { data, error } = await supabase.storage
+    .from("bucket")
+    .upload(`${department}/${newFileName}`, file);
+
+  if (error) throw error;
+
+  revalidatePath(`/dashboard/${department}`);
+  return { success: true, path: data.path };
+}
+
+export async function getFiles(departmentSlug?: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.storage
+    .from("bucket")
+    .list(departmentSlug || "");
+
+  if (error) throw error;
+
+  return data.map((file) => ({
+    name: file.name,
+    url: supabase.storage
+      .from("bucket")
+      .getPublicUrl(`${departmentSlug}/${file.name}`).data.publicUrl,
+    uploadedAt: file.created_at,
+  }));
+}
+
+export async function createDepartment(name: string) {
+  const supabase = await createClient();
+  // Insert department into DB
+  const { data, error } = await supabase.from("departments").insert([{ name }]);
+
+  if (error) throw error;
+  revalidatePath("/dashboard");
+  return data;
+}

@@ -5,13 +5,23 @@ export const metadata = {
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/sidebar";
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in"); // Redirect on the server
+  }
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <main className="flex p-4 gap-4">
-        <SidebarTrigger/>
+      <AppSidebar username={ user.email || '' } />
+      <main className="block p-4">
+        <SidebarTrigger className="space-y-8" />
         {children}
       </main>
     </SidebarProvider>

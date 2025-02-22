@@ -1,4 +1,13 @@
-import { Calendar, ChevronUp, Home, Inbox, LogOut, Search, Settings, User2 } from "lucide-react";
+import {
+  Calendar,
+  ChevronUp,
+  Home,
+  Inbox,
+  LogOut,
+  Search,
+  Settings,
+  User2,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -12,38 +21,30 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import Link from "next/link";
 
 // Menu items.
 const items = [
   {
-    title: "Home",
-    url: "#",
+    title: "Dashboard",
+    url: "/dashboard",
     icon: Home,
   },
-  {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
+
   {
     title: "Search",
     url: "#",
     icon: Search,
   },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ username }: { username: string }) {
   return (
     <Sidebar>
       <SidebarHeader>SUCF RSU</SidebarHeader>
@@ -55,10 +56,10 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -69,10 +70,18 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href="#">
+                <Settings />
+                <span>Settings</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton>
-                  <User2 /> Chinyere
+                  <User2 /> {username}
                   <ChevronUp className="ml-auto" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -80,11 +89,17 @@ export function AppSidebar() {
                 side="top"
                 className="w-[--radix-popper-anchor-width]"
               >
-                <DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
                   <span>Account</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span className="flex gap-2 items-center"><LogOut /> Log out</span>
+                <DropdownMenuItem className="cursor-pointer">
+                  <Link
+                    href={"/auth/logout"}
+                    className="flex items-center gap-2"
+                  >
+                    <LogOut size={16} />
+                    <span>Log out</span>
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

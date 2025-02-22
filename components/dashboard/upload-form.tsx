@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -23,22 +23,45 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { uploadFile } from "@/app/actions";
+import { toast } from "sonner";
 
 const formSchema = z.object({
-  username: z.string().min(2).max(50),
+  label: z.string().min(2).max(50),
+  department: z.string().min(2).max(50),
+  file: z.instanceof(File).optional(),
 });
 
 export function UploadForm() {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      label: "",
+      department: "",
+      file: undefined,
     },
   });
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!values.file) return alert("No file selected");
+    const formData = new FormData();
+    formData.append("file", values.file);
+    formData.append("department", values.department);
+    formData.append("label", values.label);
+
+    try {
+      const response = await uploadFile(formData);
+      const d = new Date();
+      toast("File uploaded successfully!", {
+        description: `${d.toDateString()}"`,
+      });
+      alert("File uploaded successfully!");
+
+      console.log("Uploaded Path:", response.path);
+    } catch (error: any) {
+      alert(`Upload failed: ${error.message}`);
+    }
   }
   return (
     <Form {...form}>
@@ -46,12 +69,16 @@ export function UploadForm() {
         <div className="space-y-4">
           <FormField
             control={form.control}
-            name="username"
+            name="label"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>File Label</FormLabel>
                 <FormControl>
-                  <Input placeholder="BIO 101 First Semester" {...field} type="text" />
+                  <Input
+                    placeholder="BIO 101 First Semester"
+                    {...field}
+                    type="text"
+                  />
                 </FormControl>
                 <FormDescription>
                   This is the content title of the file been uploaded
@@ -62,10 +89,10 @@ export function UploadForm() {
           />
           <FormField
             control={form.control}
-            name="username"
+            name="department"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Department</FormLabel>
+                <FormLabel>File Label</FormLabel>
                 <FormControl>
                   <Input placeholder="Biochemistry" {...field} type="text" />
                 </FormControl>
@@ -73,21 +100,37 @@ export function UploadForm() {
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
-            name="username"
-            render={({ field }) => (
+            name="file"
+            render={({ field: { onChange, value, ...rest } }) => (
               <FormItem>
-                <FormLabel>File Label</FormLabel>
+                <FormLabel>Upload File</FormLabel>
                 <FormControl>
-                  <Input placeholder="file" {...field} type="file" />
+                  <Input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.png,.jpg"
+                    onChange={(e) => {
+                      const selectedFile = e.target.files?.[0];
+                      onChange(selectedFile || null);
+                    }}
+                    {...rest}
+                  />
                 </FormControl>
+                {value && <p className="text-sm text-gray-500">{value.name}</p>}{" "}
+                {/* Show selected file name */}
+                <FormDescription>
+                  File size should not be more than 20 MB
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <Button type="submit">Submit</Button>
+        <Button type="submit">
+          {loading ? "Uploading..." : "Upload File"}
+        </Button>
       </form>
     </Form>
   );
