@@ -15,10 +15,6 @@ export type Documents = {
 
 export const columns: ColumnDef<Documents>[] = [
   {
-    accessorKey: "id",
-    header: "S/n",
-  },
-  {
     accessorKey: "name",
     header: "Department",
   },
@@ -29,5 +25,9 @@ export const columns: ColumnDef<Documents>[] = [
   {
     accessorKey: "created_at",
     header: "Date uploaded",
+  },
+  {
+    accessorKey: "url",
+    header: "Download Link",
   },
 ];
