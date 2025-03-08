@@ -26,42 +26,66 @@ import {
 import { uploadFile } from "@/app/actions";
 import { toast } from "sonner";
 import { SubmitButton } from "../submit-button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 const formSchema = z.object({
   label: z.string().min(2).max(50),
   department: z.string().min(2).max(50),
   file: z.instanceof(File).optional(),
+  semester: z.string().min(2).max(20),
+  department_id: z.string(),
+  slug: z.string(),
 });
 
-export function UploadForm() {
+export function UploadForm({ department }: { department: any }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       label: "",
-      department:"",
+      department: department.name,
+      semester: "Not specified",
       file: undefined,
+      department_id: department.id,
+      slug: department.slug,
     },
   });
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!values.file) return alert("No file selected");
+
     const formData = new FormData();
     formData.append("file", values.file);
     formData.append("department", values.department);
     formData.append("label", values.label);
+    formData.append("semester", values.semester);
+    formData.append("department_id", values.department_id);
+    formData.append("slug", values.slug);
+
+    console.log(
+      "Submitting form with:",
+      Object.fromEntries(formData.entries())
+    );
 
     try {
       const response = await uploadFile(formData);
-      const d = new Date();
-      toast("File uploaded successfully!", {
-        description: `${d.toDateString()}"`,
+      toast.success("File uploaded successfully!", {
+        description: `Uploaded on ${new Date().toDateString()}`,
       });
-      alert("File uploaded successfully!");
-
+      setLoading(true);
       console.log("Uploaded Path:", response.path);
     } catch (error: any) {
-      alert(`Upload failed: ${error.message}`);
+      toast.error(`Upload failed: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   }
   return (
@@ -88,6 +112,30 @@ export function UploadForm() {
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="semester"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Semester</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="1st">1st semester</SelectItem>
+                      <SelectItem value="2nd">2nd semester</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}
@@ -101,7 +149,11 @@ export function UploadForm() {
                     accept=".pdf,.doc,.docx,.png,.jpg"
                     onChange={(e) => {
                       const selectedFile = e.target.files?.[0];
-                      onChange(selectedFile || null);
+                      if (selectedFile) {
+                        form.setValue("file", selectedFile, {
+                          shouldValidate: true,
+                        });
+                      }
                     }}
                     {...rest}
                   />
@@ -116,19 +168,17 @@ export function UploadForm() {
             )}
           />
         </div>
-        <SubmitButton type="submit" pendingText="Uploading...">
-          Upload File
-        </SubmitButton>
+        <Button type="submit">{loading ? "Uploading" : "Upload File"}</Button>
       </form>
     </Form>
   );
 }
 
-export default function DialogDemo() {
+export default function DialogDemo({ department }: { department: any }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">Upload File</Button>
+        <Button variant="default">Upload File</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -138,7 +188,7 @@ export default function DialogDemo() {
           </DialogDescription>
         </DialogHeader>
 
-        <UploadForm  />
+        <UploadForm department={department} />
       </DialogContent>
     </Dialog>
   );

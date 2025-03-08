@@ -20,9 +20,9 @@ export default async function Login(props: { searchParams: Promise<Message> }) {
             Sign up
           </Link>
         </p>
-        <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
+        <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8 w-full">
           <Label htmlFor="email">Email</Label>
-          <Input name="email" placeholder="you@example.com" required />
+          <Input name="email" placeholder="you@example.com" required/>
           <div className="flex justify-between items-center">
             <Label htmlFor="password">Password</Label>
             <Link

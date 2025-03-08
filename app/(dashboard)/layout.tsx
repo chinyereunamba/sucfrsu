@@ -20,7 +20,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   return (
     <SidebarProvider>
       <AppSidebar username={ user.email || '' } />
-      <main className="block p-4">
+      <main className="p-4 w-full">
         <SidebarTrigger className="space-y-8" />
         {children}
       </main>

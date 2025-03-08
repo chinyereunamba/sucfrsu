@@ -19,8 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-
+import Link from "next/link";
 
 import React, { useState } from "react";
 
@@ -49,15 +48,18 @@ export default function Dashboard() {
 export async function DepartmentList() {
   const departments = await getDepartments();
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="block space-y-2">
       {departments.map((department) => (
-        <Card key={department.id} className="w-96 min-w-64">
+        <Card key={department.id} className="w-full flex justify-between">
           <CardHeader>
-            <CardTitle>{department.name}</CardTitle>
+            <CardTitle className="text-xl font-semibold">
+              <Link href={`/dashboard/${department.slug}/`}>
+                {department.name}
+              </Link>
+            </CardTitle>
+            <p>Number of Documents: {department.documentCount}</p>
           </CardHeader>
-          <CardContent>
-            <p>Documents: {department.documentCount}</p>
-          </CardContent>
+
           <CardFooter></CardFooter>
         </Card>
       ))}

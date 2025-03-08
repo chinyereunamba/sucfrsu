@@ -141,56 +141,13 @@ export async function getDepartments() {
         .ilike("name", `${department.name}/%`);
 
       return {
-        ...department,
+        ...(department ?? []),
         documentCount: count ?? 0, // If no files, return 0
       };
     })
   );
   if (deptError) throw deptError;
   return departmentCounts;
-}
-
-export async function uploadFile(formData: FormData) {
-  const supabase = await createClient();
-  const file = formData.get("file") as File;
-  const department = formData.get("department") as string;
-  let label = formData.get("label") as string | null;
-
-  if (!file) {
-    throw new Error("No file uploaded");
-  }
-
-  if (!department) {
-    throw new Error("No department selected");
-  }
-
-  // // 🔍 Check if department exists in DB
-  // const { data: dept, error: deptError } = await supabase
-  //   .from("departments")
-  //   .select("name")
-  //   .eq("name", department)
-  //   .single();
-
-  // if (deptError || !dept) throw new Error("Department not found");
-
-  if (!label || label.trim() === "") {
-    label = department;
-  }
-
-  const fileExtension = file.name.split(".").pop();
-  const d = new Date();
-  const date = `${d.getUTCDate()}-${d.getUTCMonth() + 1}-${d.getUTCFullYear()}`;
-  const newFileName = `${label.replace(/\s+/g, "-").toLowerCase()}-${date}.${fileExtension}`;
-
-  // 📁 Upload file to the department folder
-  const { data, error } = await supabase.storage
-    .from("bucket")
-    .upload(`${department}/${newFileName}`, file);
-
-  if (error) throw error;
-
-  revalidatePath(`/dashboard/${department}`);
-  return { success: true, path: data.path };
 }
 
 export async function getFiles(departmentSlug?: string) {
@@ -218,4 +175,69 @@ export async function createDepartment(name: string) {
   if (error) throw error;
   revalidatePath("/dashboard");
   return data;
+}
+
+export async function uploadFile(formData: FormData) {
+  const supabase = await createClient(); 
+
+  const file = formData.get("file") as File;
+  const department = formData.get("department") as string;
+  const department_id = formData.get("department_id") as string;
+  const semester = formData.get("semester") as string;
+  let label = formData.get("label") as string | null;
+
+  // 🛑 Validate required fields
+  if (!file) throw new Error("No file uploaded");
+  if (!department) throw new Error("No department selected");
+  if (!department_id) throw new Error("No department id not found");
+  if (!semester) throw new Error("Semester not specified");
+
+  // 📌 Default label to department if not provided
+  if (!label || label.trim() === "") {
+    label = department;
+  }
+
+  // 🔄 Generate a unique file name
+  const fileExtension = file.name.split(".").pop();
+  const timestamp = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+  const sanitizedLabel = label.replace(/\s+/g, "-").toLowerCase();
+  const newFileName = `${sanitizedLabel}-${timestamp}.${fileExtension}`;
+
+  // 📁 Upload file to Supabase Storage (inside the department folder)
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from("bucket")
+    .upload(`${department}/${newFileName}`, file);
+  
+  console.log(uploadData)
+
+  if (uploadError)
+    throw new Error(`File upload failed: ${uploadError.message}`);
+
+  // 🔗 Get the public URL for the uploaded file
+  const { data: publicUrlData } = supabase.storage
+    .from("bucket")
+    .getPublicUrl(`${department}/${newFileName}`);
+  
+  console.log(publicUrlData)
+
+  if (!publicUrlData.publicUrl) throw new Error("Failed to retrieve file URL");
+
+  // ✅ Insert document metadata into the database
+  const { error: insertError } = await supabase.from("docs").insert([
+    {
+      name: label,
+      url: publicUrlData.publicUrl, // Store the file URL
+      semester: semester,
+      department_id: department_id, // Store department name or ID (if using foreign key)
+    },
+  ]);
+
+  console.log(insertError);
+  if (insertError)
+    throw new Error(`Database insert failed: ${insertError.message}`);
+
+  // 🔄 Revalidate the department page
+  revalidatePath(`/dashboard/${slug}`);
+
+  return { success: true, path: publicUrlData.publicUrl };
 }
