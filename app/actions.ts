@@ -184,6 +184,7 @@ export async function uploadFile(formData: FormData) {
   const department = formData.get("department") as string;
   const department_id = formData.get("department_id") as string;
   const semester = formData.get("semester") as string;
+  const slug = formData.get('slug') as string
   let label = formData.get("label") as string | null;
 
   // 🛑 Validate required fields
@@ -191,6 +192,7 @@ export async function uploadFile(formData: FormData) {
   if (!department) throw new Error("No department selected");
   if (!department_id) throw new Error("No department id not found");
   if (!semester) throw new Error("Semester not specified");
+  if (!slug) throw new Error("Slug not specified");
 
   // 📌 Default label to department if not provided
   if (!label || label.trim() === "") {

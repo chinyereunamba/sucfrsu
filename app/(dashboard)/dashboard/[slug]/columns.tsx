@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { ColumnDef } from "@tanstack/react-table";
 
 // This type is used to define the shape of our data.
@@ -25,9 +26,18 @@ export const columns: ColumnDef<Documents>[] = [
   {
     accessorKey: "created_at",
     header: "Date uploaded",
+    enableHiding: false,
   },
   {
     accessorKey: "url",
-    header: "Download Link",
+    header: "Download link",
+    id: "actions",
+    cell: ({ row }) => (
+      <Button
+        onClick={() => window.open(row.getValue('url'), '_blank')}
+      >
+        Download
+      </Button>
+    ),
   },
 ];
